@@ -65,6 +65,19 @@ def listInstances():
             res[i.id] = i.state, i.tags
     return res
 
+# get the instance hostname to connect
+def getInstance(instanceID):
+    print "getting the instance hostname"
+
+    ec2 = boto.ec2.connect_to_region('us-west-2',**auth)
+    reservations = ec2.get_all_instances()
+
+    instances = [i for r in reservations for i in r.instances]
+    for i in instances:
+        print i.id, i.public_dns_name, i.state
+        if i.id == instanceID:
+            return i.public_dns_name
+    return "Not found"
 
 # to create an instance with given tag_name
 def createInstance(instance_name):

@@ -1,7 +1,7 @@
 import boto.ec2
 import sys
 from flask import Flask
-from functions import listInstances, startInstance, stopInstance, createInstance, terminateInstance
+from functions import listInstances, startInstance, stopInstance, createInstance, terminateInstance, getInstance
 import json
 
 app = Flask(__name__)
@@ -15,6 +15,12 @@ def index():
 @app.route('/instances')
 def get_instances():
     result = listInstances()
+    return json.dumps(result)
+
+# Get the selected instance hostname
+@app.route('/instance/<id>')
+def go_to_instance(id):
+    result = getInstance(id)
     return json.dumps(result)
 
 # to start an instance
