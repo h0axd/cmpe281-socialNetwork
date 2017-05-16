@@ -2,8 +2,11 @@ var express = require('express');
 var passport = require('passport');
 var router = express.Router();
 var app = express();
+var http = require('http');
+var fs = require('fs');
 
 var array = [ "awsID_1", "awsID_2"]
+var count = 1;
 
 function EC2_Instance(id, name, status, location) {
   this.id = id
@@ -25,11 +28,47 @@ router.get('/signup', function(req, res) {
 });
 
 router.get('/profile', isLoggedIn, function(req, res) {
-  var instances = [new EC2_Instance("awsID_1", "CSNet Instance SJSU", "Active", "West"),
-  new EC2_Instance("awsID_2", "CSNet Instance UCSC", "Inactive", "East") ]
-  //res.render('profile.ejs', { user: req.user });
+var instances = [];
+getawsReponses(function(awsReponses) {
+  console.log('hope' + awsReponses[0].cluster_id);
+
+  for(var i = 0; i < awsReponses.length; i++) {
+    console.log('hope' + awsReponses[i].cluster_id);
+      var newPerson = new EC2_Instance(awsReponses[i].cluster_id, awsReponses[i].cluster_name,
+       awsReponses[i].status, "West");
+       instances.push(newPerson);
+   }
   res.render('profile.ejs', { user: instances});
 });
+});
+
+function getawsReponses(cb) {
+    http.get({
+      host: 'ec2-34-210-117-45.us-west-2.compute.amazonaws.com',
+      port: 8080,
+      path: '/instances',
+      method: 'GET'
+    }, function(res) {
+        // explicitly treat incoming data as utf8 (avoids issues with multi-byte chars)
+        res.setEncoding('utf8');
+
+        // incrementally capture the incoming response body
+        var body = '';
+        res.on('data', function(d) {
+            body += d;
+        });
+
+        // do whatever we want with the response once it's done
+        res.on('end', function() {
+          var obj = JSON.parse(body);
+          cb(obj);
+        });
+    }).on('error', function(err) {
+        // handle errors with the request itself
+        console.error('Error with the request:', err.message);
+        cb(err);
+    });
+}
 
 router.get('/logout', function(req, res) {
   req.logout();
@@ -50,34 +89,100 @@ router.post('/login', passport.authenticate('local-login', {
 
 router.post("/new",  function(req, res) {
  console.log("Instance started");
- 
-// add call for all instances
- var instances = [new EC2_Instance("awsID_1", "CSNet Instance SJSU", "Active", "West"),
- new EC2_Instance("awsID_2", "CSNet Instance UCSC", "Inactive", "East") ]
- res.render('profile.ejs', { user: instances});
+ http.get({
+   host: 'ec2-34-210-117-45.us-west-2.compute.amazonaws.com',
+   port: 8080,
+   path: '/instance/create/clustertest',
+   method: 'GET'
+ }, function(res) {
+     // explicitly treat incoming data as utf8 (avoids issues with multi-byte chars)
+     res.setEncoding('utf8');
+
+     // incrementally capture the incoming response body
+     var body = '';
+     res.on('data', function(d) {
+         body += d;
+         console.log('hope' + body);
+     });
+
+     // do whatever we want with the response once it's done
+     res.on('end', function() {
+     });
+ }).on('error', function(err) {
+     // handle errors with the request itself
+     console.error('Error with the request:', err.message);
+
+ });
+ //setTimeout(res.redirect("/profile", 3000));
+
 });
 
 router.post("/restart",  function(req, res) {
  console.log("Instance restarted");
  console.log(req.body.result);
+ var temp = req.body.result;
+ var id=temp.replace(/\s/g,'');
+ console.log("id " + id);
 
- //restart instance
- //repopulate list with new instance data
- var instances = [new EC2_Instance("awsID_1", "CSNet Instance SJSU", "Active", "West"),
- new EC2_Instance("awsID_2", "CSNet Instance UCSC", "Inactive", "East") ]
- res.render('profile.ejs', { user: instances});
+ http.get({
+   host: 'ec2-34-210-117-45.us-west-2.compute.amazonaws.com',
+   port: 8080,
+   path: '/instance/start/' + id,
+   method: 'GET'
+ }, function(res) {
+     // explicitly treat incoming data as utf8 (avoids issues with multi-byte chars)
+     res.setEncoding('utf8');
+     console.log(res.url);
+     // incrementally capture the incoming response body
+     var body = '';
+     res.on('data', function(d) {
+         body += d;
+         console.log('hope' + body);
+     });
+
+     // do whatever we want with the response once it's done
+     res.on('end', function() {
+     });
+ }).on('error', function(err) {
+     // handle errors with the request itself
+     console.error('Error with the request:', err.message);
+
+ });
 });
 
 router.post("/stopped",  function(req, res) {
  console.log("Instance stopped");
  console.log(req.body.result);
+ var temp = req.body.result;
+ var id=temp.replace(/\s/g,'');
+ console.log("id " + id);
+ http.get({
+   host: 'ec2-34-210-117-45.us-west-2.compute.amazonaws.com',
+   port: 8080,
+   path: '/instance/stop/' + id,
+   method: 'GET'
+ }, function(res) {
+     // explicitly treat incoming data as utf8 (avoids issues with multi-byte chars)
+     res.setEncoding('utf8');
+     console.log(res.url);
+     // incrementally capture the incoming response body
+     var body = '';
+     res.on('data', function(d) {
+         body += d;
+         console.log('hope' + body);
+     });
 
- //stop instance
- //repopulate list with new instance data
- var instances = [new EC2_Instance("awsID_1", "CSNet Instance SJSU", "Active", "West"),
- new EC2_Instance("awsID_2", "CSNet Instance UCSC", "Inactive", "East") ]
- res.render('profile.ejs', { user: instances});
+     // do whatever we want with the response once it's done
+     res.on('end', function() {
+     });
+ }).on('error', function(err) {
+     // handle errors with the request itself
+     console.error('Error with the request:', err.message);
+
+ });
+
 });
+
 
 module.exports = router;
 
